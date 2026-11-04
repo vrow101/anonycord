@@ -23,6 +23,7 @@ class AppSettings: ObservableObject {
     @AppStorage("channelDef") var channelDef: Int = 1
     @AppStorage("cameraType") var cameraType: String = "Wide"
     @AppStorage("videoQuality") var videoQuality: String = "1080p"
+    @AppStorage("videoFrameRate") var videoFrameRate: Int = 30
     @AppStorage("crashAtEnd") var crashAtEnd: Bool = false
     @AppStorage("showSettingsAtBttm") var showSettingsAtBttm: Bool = true
     @AppStorage("hideAll") var hideAll: Bool = false

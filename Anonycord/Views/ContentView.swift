@@ -110,7 +110,7 @@ struct ContentView: View {
                     }
                 }
                 if !isRecordingAudio && !isRecordingVideo && appSettings.showSettingsAtBttm {
-                    Text("Current Parameters : \(appSettings.videoQuality), \(appSettings.cameraType)")
+                    Text("Current Parameters : \(appSettings.videoQuality), \(appSettings.videoFrameRate) fps, \(appSettings.cameraType)")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }

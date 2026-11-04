@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var channelDefStr: String
     @State private var cameraType: String
     @State private var videoQuality: String
+    @State private var videoFrameRate: Int
     @State private var exitAtEnd: Bool
     @State private var infoAtBttm: Bool
     @State private var hideAll: Bool
@@ -24,6 +25,7 @@ struct SettingsView: View {
 
     @State private var cameraTypes = ["Wide", "Selfie"]
     private let videoQualities = ["4K", "1080p"]
+    private let videoFrameRates = [30, 60]
     
     init(mediaRecorder: MediaRecorder) {
         self.mediaRecorder = mediaRecorder
@@ -31,6 +33,7 @@ struct SettingsView: View {
         _channelDefStr = State(initialValue: String(AppSettings().channelDef))
         _cameraType = State(initialValue: AppSettings().cameraType)
         _videoQuality = State(initialValue: AppSettings().videoQuality)
+        _videoFrameRate = State(initialValue: AppSettings().videoFrameRate)
         _exitAtEnd = State(initialValue: AppSettings().crashAtEnd)
         _infoAtBttm = State(initialValue: AppSettings().showSettingsAtBttm)
         _hideAll = State(initialValue: AppSettings().hideAll)
@@ -82,6 +85,18 @@ struct SettingsView: View {
                     .pickerStyle(.menu)
                     .onChange(of: videoQuality) { newValue in
                         appSettings.videoQuality = videoQuality
+                        DispatchQueue.main.async {
+                            mediaRecorder.reconfigureCaptureSession()
+                        }
+                    }
+                    Picker("Frame rate", selection: $videoFrameRate) {
+                        ForEach(videoFrameRates, id: \.self) { frameRate in
+                            Text("\(frameRate) fps").tag(frameRate)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .onChange(of: videoFrameRate) { newValue in
+                        appSettings.videoFrameRate = newValue
                         DispatchQueue.main.async {
                             mediaRecorder.reconfigureCaptureSession()
                         }
