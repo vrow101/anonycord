@@ -32,15 +32,6 @@ class MediaRecorder: ObservableObject {
     func setupCaptureSession() {
         captureSession = AVCaptureSession()
         
-        switch AppSettings().videoQuality {
-        case "4K":
-            captureSession.sessionPreset = .hd4K3840x2160
-        case "1080p":
-            captureSession.sessionPreset = .hd1920x1080
-        default:
-            captureSession.sessionPreset = .high
-        }
-        
         setupVideoInput()
         setupAudioInput()
         setupOutputs()
@@ -63,7 +54,7 @@ class MediaRecorder: ObservableObject {
         }
         
         let cameraPosition: AVCaptureDevice.Position
-        var cameraType: AVCaptureDevice.DeviceType
+        let cameraType: AVCaptureDevice.DeviceType
         
         switch AppSettings().cameraType {
         case "Selfie":
@@ -87,16 +78,66 @@ class MediaRecorder: ObservableObject {
             print("No available camera found.")
             return
         }
-        
         do {
+            let configuredFormat = configureVideoFormat(on: cameraDevice)
             let videoInput = try AVCaptureDeviceInput(device: cameraDevice)
             if captureSession.canAddInput(videoInput) {
                 captureSession.addInput(videoInput)
+                if configuredFormat && captureSession.canSetSessionPreset(.inputPriority) {
+                    captureSession.sessionPreset = .inputPriority
+                } else {
+                    setSessionPreset()
+                }
             } else {
                 print("Unable to add video input (?)")
             }
         } catch {
             print("error creating video input \(error)")
+        }
+    }
+
+    private func configureVideoFormat(on device: AVCaptureDevice) -> Bool {
+        let settings = AppSettings()
+        let targetWidth: Int32 = settings.videoQuality == "4K" ? 3840 : 1920
+        let targetHeight: Int32 = settings.videoQuality == "4K" ? 2160 : 1080
+        let requestedFrameRate = Double(settings.videoFrameRate)
+
+        let formats = device.formats.filter { format in
+            let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            return dimensions.width == targetWidth &&
+                dimensions.height == targetHeight &&
+                format.videoSupportedFrameRateRanges.contains {
+                    $0.minFrameRate <= requestedFrameRate && $0.maxFrameRate >= requestedFrameRate
+                }
+        }
+
+        guard let format = formats.first else {
+            print("\(settings.videoQuality) at \(settings.videoFrameRate) fps is not supported by this camera.")
+            return false
+        }
+
+        do {
+            try device.lockForConfiguration()
+        } catch {
+            print("Unable to configure video format: \(error.localizedDescription)")
+            return false
+        }
+        defer { device.unlockForConfiguration() }
+        device.activeFormat = format
+        let frameDuration = CMTime(value: 1, timescale: CMTimeScale(settings.videoFrameRate))
+        device.activeVideoMinFrameDuration = frameDuration
+        device.activeVideoMaxFrameDuration = frameDuration
+        return true
+    }
+
+    private func setSessionPreset() {
+        switch AppSettings().videoQuality {
+        case "4K" where captureSession.canSetSessionPreset(.hd4K3840x2160):
+            captureSession.sessionPreset = .hd4K3840x2160
+        case "1080p" where captureSession.canSetSessionPreset(.hd1920x1080):
+            captureSession.sessionPreset = .hd1920x1080
+        default:
+            captureSession.sessionPreset = .high
         }
     }
     
