@@ -120,8 +120,11 @@ struct ContentView: View {
     }
     
     private func setup() {
-        mediaRecorder.requestPermissions()
-        mediaRecorder.setupCaptureSession()
+        mediaRecorder.requestPermissions { videoPermissionGranted in
+            if videoPermissionGranted {
+                mediaRecorder.setupCaptureSession()
+            }
+        }
     }
     
     private func toggleVideoRecording() {
